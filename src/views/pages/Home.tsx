@@ -63,6 +63,11 @@ export default function Home({ v }: Props) {
                 </div>
                 {v.heliosEmpty && (
                   <>
+                    <div style={{"display":"flex","flexWrap":"wrap","gap":"8px","padding":"10px 12px","borderTop":"1px solid var(--border)"}}>
+                      {arr(v.suggestions).map((sg: any, i: number) => (
+                        <button key={i} onClick={sg?.run} style={{"height":"30px","padding":"0 13px","background":"var(--chip)","border":"1px solid var(--chip-border)","borderRadius":"var(--chip-r,999px)","fontSize":"12.5px","color":"var(--body)","cursor":"pointer"}}>{txt(sg?.label)}</button>
+                      ))}
+                    </div>
                     <div style={{"display":"flex","flexWrap":"wrap","alignItems":"center","gap":"2px","padding":"6px 8px","borderTop":"1px solid var(--border)","background":"var(--surface-faint)"}}>
                       {arr(v.composerTools).map((t: any, i14: number) => (
                         <Fragment key={i14}>

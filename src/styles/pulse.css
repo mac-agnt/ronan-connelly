@@ -154,12 +154,12 @@ html,body{margin:0;padding:0;height:100%}
 --bloom-a:rgba(244,86,26,.44);--bloom-b:rgba(255,140,60,.3);--bloom-c:rgba(200,70,40,.26);--hero-field:rgba(16,12,10,.86);--records-card:rgba(14,11,9,.90);--chip:rgba(13,10,8,.82);--chip-border:rgba(255,255,255,.10);
 --hero-grad:linear-gradient(180deg,#0e0805 0%,#3a1405 18%,#7a2708 40%,#f4561a 60%,#a8380e 82%,#120b07 100%)}
 [data-theme="harbour"]{
---ui:"Geist",system-ui,sans-serif;--mono:"Geist",system-ui,sans-serif;--fig-weight:600;--card-r:24px;--cta-r:999px;--chip-r:999px;--panel:#0f1316;--r-ctl:999px;--r-md:16px;--r-sm:12px;--kpi-band:#101417;--kpi-card:#161b1e;--kpi-ink:#f3f5f4;--kpi-dim:#9aa39f;--kpi-up:#5ee79a;--kpi-down:#ef4b52;--rail-active:#1b2124;--rail-active-ink:#5ee79a;--rail-active-ring:inset 0 1px 0 rgba(255,255,255,.04);
+--ui:"Geist",system-ui,sans-serif;--mono:"Geist",system-ui,sans-serif;--fig-weight:600;--card-r:24px;--cta-r:999px;--chip-r:999px;--panel:#0f1316;--r-ctl:999px;--r-md:16px;--r-sm:12px;--kpi-band:#101417;--kpi-card:#161b1e;--kpi-ink:#f3f5f4;--kpi-dim:#9aa39f;--kpi-up:#8fb0e0;--kpi-down:#ef4b52;--rail-active:#1b2124;--rail-active-ink:#8fb0e0;--rail-active-ring:inset 0 1px 0 rgba(255,255,255,.04);
 --bg:#0b0e10;--rail:#0e1214;--surface:#13171a;--surface-2:#191e21;
 --surface-strong:#161a1d;--overlay:rgba(19,23,26,.97);--tooltip:#1d2226;--tooltip-ink:#f3f5f4;
 --border:rgba(255,255,255,.07);--border-strong:rgba(255,255,255,.14);--card-shadow:0 1px 0 rgba(255,255,255,.03) inset;
 --ink:#f3f5f4;--body:#cdd4d0;--dim:#9aa39f;--faint:#6b7470;--mid:#838c88;
---accent:#5ee79a;--on-accent:#07170e;--on-accent-2:rgba(7,23,14,.66);--on-accent-strong:rgba(7,23,14,.86);--on-accent-soft:rgba(7,23,14,.22);
+--accent:#638CCA;--on-accent:#0a1220;--on-accent-2:rgba(10,18,32,.66);--on-accent-strong:rgba(10,18,32,.86);--on-accent-soft:rgba(7,23,14,.22);
 --accent-hover:#7ef0b0;--accent-soft:rgba(94,231,154,.16);--accent-faint:rgba(94,231,154,.07);--accent-line:rgba(94,231,154,.3);
 --accent-fill:linear-gradient(90deg,#52e08c 0%,#8cf2b8 100%);--accent-glow:0 0 26px rgba(94,231,154,.28);
 --ok:#5ee79a;--ok-soft:rgba(94,231,154,.13);--warn:#f0883e;--warn-soft:rgba(240,136,62,.15);--bad:#ef4b52;--bad-soft:rgba(239,75,82,.14);--bad-on-accent:#5c1418;--bad-on-accent-ink:#4e1014;

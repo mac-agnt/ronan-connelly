@@ -1,5 +1,7 @@
 import React from "react";
 import { DCLogic } from "../runtime/logic";
+import { loadFx, saveFx, clearFx, apply as fxApply, ORG } from "./fixtures";
+import { buildModule, MODULE_PAGES, TABS, WORK_MODULE_SECS, REC_MODULE_SECS } from "./modules";
 import {
   INK,
   BODY,
@@ -86,7 +88,7 @@ const NAV = (() => {
 
 /* All state and behaviour for Pulse. renderVals() returns the flat object the views render from. */
 export default class PulseLogic extends DCLogic {
-  state = { w: typeof window === "undefined" ? 1440 : window.innerWidth, theme:"harbour", page:"Home", draft:"", query:"", thread:[], typed:0, paletteOpen:false, showNotifs:false, palScope:"All", palSel:0, palRecent:["Dunne & Sons Ltd","Credit Control"],
+  state = { fx: loadFx(), modSec:{}, modUi:{}, w: typeof window === "undefined" ? 1440 : window.innerWidth, theme:"harbour", page:"Home", draft:"", query:"", thread:[], typed:0, paletteOpen:false, showNotifs:false, palScope:"All", palSel:0, palRecent:["Western Utilities Delivery (demo)","Credit Control"],
             done:{}, resolved:{}, approved:{}, inboxFilter:"All", approvalFilter:"Awaiting you", open:null, range:"30d",
             workDoc:null, workDocTab:"work",
             queue:"mine", recordTab:"Overview", record:"person", hovered:null, hoverLabel:"", hoverHint:"", hoverTop:0,
@@ -1249,6 +1251,20 @@ export default class PulseLogic extends DCLogic {
   }
   componentDidUpdate(){ this.syncRailThumb(); }
 
+  modAct(name, payload){ this.setState(p => { const fx = fxApply(p.fx, name, payload); saveFx(fx); return {fx}; }); }
+  modUiSet(k, v){ this.setState(p => ({modUi:Object.assign({}, p.modUi, {[k]:v})})); }
+  modNav(page, sec, id){
+    this.setState(p => {
+      const patch = {page, open:null, modUi:Object.assign({}, p.modUi, id ? {["sel:" + page + "/" + sec]:id} : {})};
+      if (page === "Work") patch.workSection = sec; else if (page === "Records") patch.recSection = sec; else patch.modSec = Object.assign({}, p.modSec, {[page]:sec});
+      return patch; });
+  }
+  modDownload(name, text, type){
+    const url = URL.createObjectURL(new Blob([text], {type:type || "text/plain"}));
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 500);
+  }
+  modReset(){ clearFx(); this.setState({fx:loadFx(), modUi:{}}); }
+
   go(page){
     const order = NAV.filter(n => !n.divider).map(n => n.page).concat(["Settings"]);
     const from = order.indexOf(this.state.page), to = order.indexOf(page);
@@ -1283,7 +1299,7 @@ export default class PulseLogic extends DCLogic {
       const title = prev.newTask.trim();
       if (!title) return {newTask:""};
       return {newTask:"", addedTasks: [{id:"n" + Date.now(), title, status:"Not started",
-        priority:prev.newPriority, who:"MK", due:"No due date", late:false,
+        priority:prev.newPriority, who:"RC", due:"No due date", late:false,
         client:"No client", day:"Any day", mins:"Mins", view:"All tasks"}].concat(prev.addedTasks)};
     });
   }
@@ -1427,6 +1443,11 @@ export default class PulseLogic extends DCLogic {
          leave: () => { if (this.state.railHov === idx) this.setState({railHov:null}); this.unhover(idx); },
          go: () => this.go(n.page)});
 
+    const modSecId = page === "Work" ? st.workSection : page === "Records" ? st.recSection : ((st.modSec[page]) || ((TABS[page] || [[""]])[0][0]));
+    const isMod = MODULE_PAGES.indexOf(page) > -1 || (page === "Work" && WORK_MODULE_SECS.indexOf(modSecId) > -1) || (page === "Records" && REC_MODULE_SECS.indexOf(modSecId) > -1);
+    const modModel = isMod ? (() => {
+      const built = buildModule(page, modSecId, st.fx, st.modUi, {act:(n, pl) => this.modAct(n, pl), ui:(k, val) => this.modUiSet(k, val), nav:(pg, sc, id) => this.modNav(pg, sc, id), download:(n, t, ty) => this.modDownload(n, t, ty)});
+      return built ? Object.assign({page, reset:() => this.modReset(), nav:(pg, sc, id) => this.modNav(pg, sc, id)}, built) : null; })() : null;
     const workSec = WORK_SECTIONS.find(s => s.id === st.workSection) || WORK_SECTIONS[0];
     const workView = st.workViews[workSec.id] || workSec.views[0];
     const allWorkTasks = st.addedTasks.concat(WORK_TASKS);
@@ -1742,21 +1763,24 @@ export default class PulseLogic extends DCLogic {
     const HERO = {
       contacts:{eyebrow:"CONTACTS · " + CONTACTS.length + " ON FILE", title:"Everyone you deal with",
         blurb:"Staff and external in one place. Ask in your own words — it matches on name, role, organisation and tag.",
-        placeholder:"Try “buyers in Cork”, “installers”, “on stop”…", kind:"KEYWORD", scroll:"SCROLL FOR THE FULL LIST",
-        suggestions:["on stop","installer","Casey","supplier"]},
+        placeholder:"Try “buyers in Mayo”, “installers”, “on stop”…", kind:"KEYWORD", scroll:"SCROLL FOR THE FULL LIST",
+        suggestions:["on stop","installer","Connacht","supplier"]},
       files:{eyebrow:"FILES · " + FILE_TREE.filter(r => r.type === "file").length + " DOCUMENTS",
         title:"Everything on record", blurb:"Contracts, certificates and invoices. Indexed pages are the ones Helios can read from.",
         placeholder:"Search inside every document…", kind:"FULL TEXT", scroll:"SCROLL FOR THE VIEWER",
         suggestions:["credit","expiry","framework","invoice"]},
       ontology:{eyebrow:"ONTOLOGY", title:"Ontology", blurb:recSec.blurb,
-        placeholder:"", kind:"", scroll:"", suggestions:[]}
+        placeholder:"", kind:"", scroll:"", suggestions:[]},
+      clients:{eyebrow:"", title:"", blurb:"", placeholder:"", kind:"", scroll:"", suggestions:[]},
+      suppliers:{eyebrow:"", title:"", blurb:"", placeholder:"", kind:"", scroll:"", suggestions:[]},
+      people:{eyebrow:"", title:"", blurb:"", placeholder:"", kind:"", scroll:"", suggestions:[]}
     }[recSec.id];
 
     const recModel = {
       title: HERO.title, blurb: HERO.blurb,
       eyebrow: HERO.eyebrow, askPlaceholder: HERO.placeholder,
       searchKind: HERO.kind, scrollHint: HERO.scroll,
-      hasHero: page === "Records" && recSec.id !== "ontology",
+      hasHero: page === "Records" && recSec.id !== "ontology" && REC_MODULE_SECS.indexOf(recSec.id) < 0,
       isContacts: page === "Records" && recSec.id === "contacts",
       isFiles: page === "Records" && recSec.id === "files",
       isOntology: page === "Records" && recSec.id === "ontology",
@@ -1998,7 +2022,7 @@ export default class PulseLogic extends DCLogic {
     };
 
     const adminModel = {
-      company: "Kilbride Group",
+      company: "Civil Engineering & Plant",
       urgent: [
         ["3", "employees awaiting access", AMBER, "var(--warn-soft)", "people"],
         ["1", "integration disconnected", RED, "var(--bad-soft)", "integrations"],
@@ -2502,14 +2526,14 @@ export default class PulseLogic extends DCLogic {
       + (active ? "background:var(--pill-bg);color:var(--pill-ink);font-weight:500;box-shadow:0 2px 5px rgba(0,0,0,.34),0 6px 16px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.5);" : "background:none;color:var(--dim)");
 
     const TASKS = [
-      {id:"t1", title:"Chase INV-10428 — Dunne & Sons", due:"09:30", who:"AN", queue:["mine","overdue"], subject:"Dunne & Sons Ltd", priority:"high", late:true},
-      {id:"t2", title:"Reassign Van 04 jobs off Ballincollig", due:"11:00", who:"MK", queue:["mine","overdue"], subject:"Ballincollig depot", priority:"high", late:true},
-      {id:"t3", title:"Approve purchase order PO-4471", due:"12:00", who:"MK", queue:["mine"], subject:"PO-4471", priority:"normal"},
-      {id:"t4", title:"Call Casey Builders about Thursday", due:"14:00", who:"TW", queue:["mine","team"], subject:"Casey Builders", priority:"normal"},
+      {id:"t1", title:"Chase INV-10428 — Western Utilities", due:"09:30", who:"AN", queue:["mine","overdue"], subject:"Western Utilities Delivery (demo)", priority:"high", late:true},
+      {id:"t2", title:"Reassign HIRE-084 to EX-022", due:"11:00", who:"RC", queue:["mine","overdue"], subject:"Main yard", priority:"high", late:true},
+      {id:"t3", title:"Approve purchase order HF-220 PO", due:"12:00", who:"RC", queue:["mine"], subject:"HF-220 PO", priority:"normal"},
+      {id:"t4", title:"Call Connacht Infrastructure about Thursday", due:"14:00", who:"TW", queue:["mine","team"], subject:"Connacht Infrastructure", priority:"normal"},
       {id:"t5", title:"Sign off August counter stocktake", due:"16:30", who:"SB", queue:["team"], subject:"Head office", priority:"low"},
       {id:"t6", title:"Assign installer to Thursday depot visit", due:"Tomorrow", who:"—", queue:["unassigned","upcoming"], subject:"site-visits.visit", priority:"high"},
       {id:"t7", title:"VAT return — August", due:"Fri", who:"AN", queue:["team","upcoming"], subject:"Head office", priority:"normal"},
-      {id:"t8", title:"Ballincollig lease decision", due:"Thu", who:"MK", queue:["mine","upcoming"], subject:"Ballincollig depot", priority:"high"}
+      {id:"t8", title:"Review variation VAR-009", due:"Thu", who:"RC", queue:["mine","upcoming"], subject:"Main yard", priority:"high"}
     ];
     const decorateTask = (t) => {
       const done = !!st.done[t.id];
@@ -2543,10 +2567,10 @@ export default class PulseLogic extends DCLogic {
     const queueTasks = (st.queue === "all" ? TASKS : TASKS.filter(t => t.queue.includes(st.queue))).map(decorateTask);
 
     const APPROVALS = [
-      {id:"a1", title:"Purchase order PO-4471 — €14,280", subject:"Munster Plumbing Supplies · raised by Aoife Nolan", age:"18m", status:"awaiting you",
-       steps:[{who:"Aoife Nolan",state:"raised 08:54",dot:GREEN},{who:"Martin Kilbride",state:"pending",dot:AMBER}],
+      {id:"a1", title:"Purchase order HF-220 PO — €14,280", subject:"West Coast Industrial Supplies · raised by Niamh Kelly", age:"18m", status:"awaiting you",
+       steps:[{who:"Niamh Kelly",state:"raised 08:54",dot:GREEN},{who:"Ronan Conneely",state:"pending",dot:AMBER}],
        work:{kind:"table", label:"PURCHASE ORDER", viewLabel:"View order",
-         headline:"PO-4471 · Munster Plumbing Supplies", sub:"Delivery Thursday 18 Sep · terms 30 days",
+         headline:"HF-220 PO · West Coast Industrial Supplies", sub:"Delivery Thursday 18 Sep · terms 30 days",
          cols:["Line","Qty","Unit","Total"], align:["left","right","right","right"],
          rows:[["22mm copper tube — 3m","240","€38.40","€9,216.00"],
                ["Compression elbow 22mm","400","€4.10","€1,640.00"],
@@ -2559,10 +2583,10 @@ export default class PulseLogic extends DCLogic {
                    ["Checked threshold","€4,280 over Martin's sign-off limit, so it routed here"]],
          tools:[["records.read","read"],["invoices.read","read"],["approvals.route","write"]],
          risk:"No alternative supplier quote on file. Last price change was 14 June."}},
-      {id:"a2", title:"Credit limit increase — Casey Builders", subject:"€10,000 → €18,000 · raised by Niamh Cronin", age:"Yesterday", status:"awaiting you",
-       steps:[{who:"Niamh Cronin",state:"raised 16:02",dot:GREEN},{who:"Aoife Nolan",state:"approved 16:40",dot:GREEN},{who:"Martin Kilbride",state:"pending",dot:AMBER}],
+      {id:"a2", title:"Credit limit increase — Connacht Infrastructure", subject:"€10,000 → €18,000 · raised by Niamh Kelly", age:"Yesterday", status:"awaiting you",
+       steps:[{who:"Niamh Kelly",state:"raised 16:02",dot:GREEN},{who:"Niamh Kelly",state:"approved 16:40",dot:GREEN},{who:"Ronan Conneely",state:"pending",dot:AMBER}],
        work:{kind:"diff", label:"RECORD CHANGE", viewLabel:"View change",
-         headline:"Casey Builders Ltd · account CB-0142", sub:"Three fields change on approval, one unchanged",
+         headline:"Connacht Infrastructure Ltd · account CB-0142", sub:"Three fields change on approval, one unchanged",
          diff:[["Credit limit","€10,000","€18,000"],["Terms","30 days","45 days"],["Risk band","B","B"],["Reviewed","14 Mar 2026","Today"]],
          thinking:[["Read payment history","24 invoices, 22 paid on time, average 27 days"],
                    ["Checked exposure","Current balance €7,400 — 74% of the existing limit"],
@@ -2570,30 +2594,30 @@ export default class PulseLogic extends DCLogic {
                    ["Checked policy","Increases above €15,000 need your decision"]],
          tools:[["records.read","read"],["invoices.read","read"],["records.update","write"]],
          risk:"One late payment in February, 19 days over. Cleared in full."}},
-      {id:"a4", title:"Proposal — Ballincollig retrofit €62,400", subject:"Drafted by Helios · raised by Niamh Cronin", age:"3h", status:"awaiting you",
-       steps:[{who:"Niamh Cronin",state:"raised 06:10",dot:GREEN},{who:"Martin Kilbride",state:"pending",dot:AMBER}],
+      {id:"a4", title:"Proposal — Main yard retrofit €62,400", subject:"Drafted by Helios · raised by Niamh Kelly", age:"3h", status:"awaiting you",
+       steps:[{who:"Niamh Kelly",state:"raised 06:10",dot:GREEN},{who:"Ronan Conneely",state:"pending",dot:AMBER}],
        work:{kind:"doc", label:"PROPOSAL · 4 PAGES", viewLabel:"Read proposal",
-         headline:"Heating retrofit — Ballincollig depot", sub:"Prepared for Casey Builders Ltd · valid 30 days",
+         headline:"Heating retrofit — Main yard", sub:"Prepared for Connacht Infrastructure Ltd · valid 30 days",
          doc:[["Scope","Replace the depot's two oil boilers with a cascaded air-source system, re-balance the existing circuit and fit weather compensation controls. Work is phased over two weekends so the yard keeps running."],
               ["Approach","Week one strips the plant room and lands the new units on the existing plinth. Week two commissions the cascade and hands over with a 12-month monitoring window."],
               ["Commercials","€62,400 fixed price, 30% on order, 40% on plant delivery, 30% on handover. Excludes making good to the render."],
-              ["Why us","We hold the maintenance contract on the Glanmire site and carry the same plant in stock, so lead time is three weeks rather than nine."]],
+              ["Why us","We hold the maintenance contract on the Westport site and carry the same plant in stock, so lead time is three weeks rather than nine."]],
          totals:[["Plant","€38,900.00"],["Labour","€18,100.00"],["Controls and commissioning","€5,400.00"],["Total","€62,400.00"]],
          thinking:[["Pulled the site record","Two oil boilers, 2009, last serviced March"],
-                   ["Priced from live stock","Plant is in stock at the Cork branch"],
-                   ["Reused past wording","Lifted scope language from the Glanmire proposal you approved"],
+                   ["Priced from live stock","Plant is in stock at the Mayo branch"],
+                   ["Reused past wording","Lifted scope language from the Westport proposal you approved"],
                    ["Left a gap","No allowance for asbestos survey — flagged below"]],
          tools:[["records.read","read"],["files.read","read"],["email.send","external"]],
          risk:"No asbestos survey allowance. If the plant room needs one, add roughly €1,200."}},
       {id:"a5", title:"Payment run — 14 suppliers €48,920", subject:"Scheduled by Cash Watch · Friday 19 Sep", age:"1h", status:"awaiting you",
-       steps:[{who:"Cash Watch",state:"proposed 09:40",dot:GREEN},{who:"Martin Kilbride",state:"pending",dot:AMBER}],
+       steps:[{who:"Cash Watch",state:"proposed 09:40",dot:GREEN},{who:"Ronan Conneely",state:"pending",dot:AMBER}],
        work:{kind:"table", label:"PAYMENT RUN", viewLabel:"View run",
          headline:"Run PR-0238 · 14 payments", sub:"Leaves the AIB current account on Friday 19 Sep",
          cols:["Supplier","Due","Invoices","Amount"], align:["left","left","right","right"],
-         rows:[["Munster Plumbing Supplies","19 Sep","3","€18,240.00"],
+         rows:[["West Coast Industrial Supplies","19 Sep","3","€18,240.00"],
                ["Tyrrell Insulation","19 Sep","1","€9,110.00"],
                ["Kelleher Haulage","20 Sep","4","€7,480.00"],
-               ["Cork Electrical Wholesale","19 Sep","2","€6,300.00"],
+               ["Mayo Electrical Wholesale","19 Sep","2","€6,300.00"],
                ["10 others","19–24 Sep","11","€7,790.00"]],
          totals:[["Run total","€48,920.00"],["Account balance after","€61,380.00"],["Held back","€2,410.00"]],
          thinking:[["Read the ledger","31 invoices due inside seven days"],
@@ -2602,10 +2626,10 @@ export default class PulseLogic extends DCLogic {
                    ["Checked mandates","All 14 have current SEPA mandates on file"]],
          tools:[["invoices.read","read"],["payments.read","read"],["bank.payment.create","external"]],
          risk:"Two invoices held back total €2,410. They will age past 60 days if not paid next run."}},
-      {id:"a3", title:"Write-off — INV-10233 €412", subject:"Glanmire Mechanical · raised by Aoife Nolan", age:"2 days", status:"approved",
-       steps:[{who:"Aoife Nolan",state:"raised",dot:GREEN},{who:"Martin Kilbride",state:"approved",dot:GREEN}],
+      {id:"a3", title:"Write-off — INV-10233 €412", subject:"ESB (demo record) · raised by Niamh Kelly", age:"2 days", status:"approved",
+       steps:[{who:"Niamh Kelly",state:"raised",dot:GREEN},{who:"Ronan Conneely",state:"approved",dot:GREEN}],
        work:{kind:"diff", label:"WRITE-OFF", viewLabel:"View write-off",
-         headline:"INV-10233 · Glanmire Mechanical", sub:"Two fields change on approval",
+         headline:"INV-10233 · ESB (demo record)", sub:"Two fields change on approval",
          diff:[["Status","Past due 94 days","Written off"],["Balance","€412.00","€0.00"]],
          thinking:[["Checked the age","94 days past due, three chases sent"],
                    ["Checked the account","Company dissolved 12 August"],
@@ -2614,7 +2638,7 @@ export default class PulseLogic extends DCLogic {
          risk:"None. The counterparty no longer exists."}}
     ];
     const bucketOf = (a) => a.status === "approved" ? "Decided"
-      : a.steps.some(s => s.state === "pending" && s.who === "Martin Kilbride") ? "Awaiting you" : "Awaiting others";
+      : a.steps.some(s => s.state === "pending" && s.who === "Ronan Conneely") ? "Awaiting you" : "Awaiting others";
     const APPROVAL_COUNTS = {"Awaiting you":0, "Awaiting others":0, "Decided":0};
     APPROVALS.filter(a => !st.approved[a.id]).forEach(a => { APPROVAL_COUNTS[bucketOf(a)] += 1; });
     const approvalView = st.workViews.approvals || "Awaiting you";
@@ -2631,6 +2655,7 @@ export default class PulseLogic extends DCLogic {
       tasks: st.addedTasks.concat(WORK_TASKS).filter(t => !(st.done[t.id] !== undefined ? st.done[t.id] : t.done)).length,
       approvals: APPROVALS.filter(a => !st.approved[a.id] && bucketOf(a) === "Awaiting you").length,
       workflows: OPS_DEFS.filter(w => w.kind !== "task" && (st.opsOff[w.id] === undefined ? w.on : !st.opsOff[w.id])).length,
+      timesheets: st.fx.timesheets.filter(t => t.status === "missing").length,
       schedules: OPS_DEFS.filter(w => w.triggerKind === "schedule").length
     };
     const approvals = APPROVALS.filter(a => !st.approved[a.id] && bucketOf(a) === st.approvalFilter).map(a => Object.assign({}, a, {
@@ -2778,8 +2803,8 @@ export default class PulseLogic extends DCLogic {
        ],
        breakdown:[
         {key:"Head office", value:money(214600), pct:"72%", color:LIME},
-        {key:"Ballincollig depot", value:money(156800), pct:"53%", color:"var(--track)"},
-        {key:"Mallow yard", value:money(41400), pct:"18%", color:"var(--track)"}
+        {key:"Main yard", value:money(156800), pct:"53%", color:"var(--track)"},
+        {key:"Workshop", value:money(41400), pct:"18%", color:"var(--track)"}
        ]},
       {title:"site-visits", description:"Contributed by an installed module.", hasBreakdown:false,
        metrics:[
@@ -2809,7 +2834,7 @@ export default class PulseLogic extends DCLogic {
        trigger:"event · site-visits.visit.created", actions:[{label:"notify.inbox", border:"var(--track)", color:BODY}],
        lastRun:"Today 07:00", result:"ok", resultColor:GREEN, hasRuns:true, runSummary:"9 ok · 1 failed",
        runs:runs(["idle","idle","ok","ok","failed","ok","ok","ok","idle","ok","ok","ok","ok","ok"])},
-      {name:"Xero invoice sync", state:"failing", stateBg:"var(--bad-soft)", stateColor:RED,
+      {name:"QuickBooks Online invoice sync", state:"failing", stateBg:"var(--bad-soft)", stateColor:RED,
        trigger:"schedule · hourly", actions:[{label:"xero.post", border:"var(--bad-soft)", color:RED}],
        lastRun:"Today 02:14", result:"invalid_grant · dead-lettered", resultColor:RED, hasRuns:true, runSummary:"4 failed",
        runs:runs(["ok","ok","ok","ok","ok","ok","ok","ok","ok","ok","failed","failed","failed","failed"])}
@@ -2822,7 +2847,7 @@ export default class PulseLogic extends DCLogic {
       {label:"Failed deliveries", value:"5", hint:"across 2 subscribers", color:AMBER, border:"var(--warn-soft)"}
     ];
     const failures = [
-      {name:"Xero invoice sync", status:"failed", error:"invalid_grant: refresh token expired", at:"02:14", tagBg:"var(--bad-soft)", tagColor:RED},
+      {name:"QuickBooks Online invoice sync", status:"failed", error:"invalid_grant: refresh token expired", at:"02:14", tagBg:"var(--bad-soft)", tagColor:RED},
       {name:"Overdue invoice reminder", status:"partial", error:"notify.email: 4 records missing billing_email", at:"08:00", tagBg:"var(--warn-soft)", tagColor:AMBER},
       {name:"Unassigned visit escalation", status:"failed", error:"notify.inbox: actor has no grant for core:notification:create", at:"Mon", tagBg:"var(--bad-soft)", tagColor:RED}
     ];
@@ -2854,11 +2879,11 @@ export default class PulseLogic extends DCLogic {
     ];
 
     const notificationFeed = [
-      {dot:LIME, text:"Aoife Nolan assigned you “Approve purchase order PO-4471”", event:"core.approval.created", channel:"Inbox", meta:"18m"},
-      {dot:RED, text:"Xero invoice sync failed — refresh token expired", event:"core.automation.failed", channel:"Inbox · WhatsApp", meta:"6h"},
-      {dot:AMBER, text:"Helios flagged a change in Dunne & Sons payment behaviour", event:"core.notification.created", channel:"Inbox", meta:"2h"},
+      {dot:LIME, text:"Niamh Kelly assigned you “Approve purchase order HF-220 PO”", event:"core.approval.created", channel:"Inbox", meta:"18m"},
+      {dot:RED, text:"QuickBooks Online invoice sync failed — refresh token expired", event:"core.automation.failed", channel:"Inbox · WhatsApp", meta:"6h"},
+      {dot:AMBER, text:"Helios flagged a change in Western Utilities payment behaviour", event:"core.notification.created", channel:"Inbox", meta:"2h"},
       {dot:AMBER, text:"Thursday's depot visit is still unassigned", event:"site-visits.visit.created", channel:"Inbox", meta:"2h"},
-      {dot:NEUTRAL, text:"Séamus Byrne mentioned you on “Reassign Van 04 jobs”", event:"core.comment.created", channel:"Inbox", meta:"Yesterday"},
+      {dot:NEUTRAL, text:"Liam Joyce mentioned you on “Reassign EX-014 jobs”", event:"core.comment.created", channel:"Inbox", meta:"Yesterday"},
       {dot:NEUTRAL, text:"Your daily briefing is ready", event:"core.briefing.sent", channel:"WhatsApp", meta:"07:00"}
     ];
 
@@ -3024,7 +3049,7 @@ export default class PulseLogic extends DCLogic {
       {title:"Action inbox", count:"31×", icon:ICONS.inbox, go: jump("Home")},
       {title:"Approvals", count:"24×", icon:ICONS.approvals, go: jump("Work", {workSection:"approvals"})},
       {title:"Overdue invoices", count:"18×", icon:ICONS.insights, go: jump("Dashboard", {aspect:"cash"})},
-      {title:"Dunne & Sons Ltd", count:"12×", icon:ICONS.orgs, go: jump("Records", {recSection:"contacts", record:"org"})},
+      {title:"Western Utilities Delivery (demo)", count:"12×", icon:ICONS.orgs, go: jump("Records", {recSection:"contacts", record:"org"})},
       {title:"Month-end close", count:"9×", icon:ICONS.agents, go: jump("Agents", {agentId:"monthend"})},
       {title:"Site visits", count:"7×", icon:ICONS.visits, go: jump("Work", {workSection:"schedules"})}
     ];
@@ -3089,7 +3114,11 @@ export default class PulseLogic extends DCLogic {
     const DIRS_ORDER = ["People","Organisations","Teams","Locations","Site visits"];
     const ADMIN_ORDER = ["Automations","System health","Installed modules"];
     let contextNav, contextHint, searchHint;
-    if (page === "Settings"){
+    if (MODULE_PAGES.indexOf(page) > -1){
+      contextNav = TABS[page].map(t => seg(t[1], modSecId === t[0], () => this.setState(pr => ({modSec:Object.assign({}, pr.modSec, {[page]:t[0]})}))));
+      contextHint = page.toUpperCase() + " · DEMO DATA";
+      searchHint = "Search " + page.toLowerCase();
+    } else if (page === "Settings"){
       contextNav = ADMIN_GROUPS.map(grp => seg(
         grp[0].charAt(0) + grp[0].slice(1).toLowerCase(),
         st.adminGroup === grp[0],
@@ -3113,10 +3142,7 @@ export default class PulseLogic extends DCLogic {
       contextHint = "WORK · " + workSec.label.toUpperCase();
       searchHint = "Search " + workSec.label.toLowerCase();
     } else if (page === "Home" || page === "Dashboard"){
-      contextNav = [
-        seg("Home", page === "Home", () => this.go("Home")),
-        seg("Dashboard", page === "Dashboard", () => this.go("Dashboard"))
-      ];
+      contextNav = [];
       contextHint = page === "Home" ? "HELIOS · " + openKeys.length + " WAITING" : "CRM · " + areaLabel.toUpperCase();
       searchHint = page === "Dashboard" ? "Search the dashboard" : "Search every record you can see";
     } else if (page === "Agents"){
@@ -3167,11 +3193,11 @@ export default class PulseLogic extends DCLogic {
     const roomy = st.w >= 1320, mid = st.w >= 1120;
     return {
       nav, contextNav, contextHint, searchHint, queueTasks,
-      isRecords: page === "Records",
+      isRecords: page === "Records" && !modModel,
       isActivity: page === "Activity",
       act: actModel,
       admin: adminModel,
-      showRecordsWash: page === "Records" && recSec.id !== "ontology",
+      showRecordsWash: page === "Records" && recSec.id !== "ontology" && REC_MODULE_SECS.indexOf(recSec.id) < 0,
       rec: recModel, tree: treeModel, onto: ontoModel, newRec: newRecModel, graph: graphModel,
 
       /* rail */
@@ -3224,14 +3250,14 @@ export default class PulseLogic extends DCLogic {
         return {label:d.label, value:d.value, delta:d.delta, deltaColor: d.dir === "up" ? GREEN : RED};
       }),
       visitWidget: [
-        {title:"Boiler service · Casey Builders", when:"Wed 09:00", dot:LIME},
+        {title:"Boiler service · Connacht Infrastructure", when:"Wed 09:00", dot:LIME},
         {title:"Pre-install survey · Ó Riain", when:"Wed 14:00", dot:LIME},
-        {title:"Depot check · Ballincollig", when:"Thu 09:00", dot:AMBER}
+        {title:"Depot check · Main yard", when:"Thu 09:00", dot:AMBER}
       ],
 
       /* dashboard */
-      isDashboard: page === "Dashboard",
-      dashTitle: "Kilbride Group · " + areaLabel,
+      isDashboard: false, mod: modModel,
+      dashTitle: "Civil Engineering & Plant · " + areaLabel,
       kpiEdit: st.kpiEdit,
       toggleKpiEdit: () => this.setState(prev => ({kpiEdit: !prev.kpiEdit})),
       kpiEditLabel: st.kpiEdit ? "Done" : "Edit KPIs",
@@ -3446,7 +3472,7 @@ export default class PulseLogic extends DCLogic {
                   ["RUNS TODAY", "42", INK, ico.today],
                   ["FAILING", "1", RED, ico.overdue],
                   ["OK LAST 14 DAYS", "96%", INK, ico.done]],
-          workflows: [], schedules: []
+          timesheets: [], workflows: [], schedules: []
         }[sec.id];
         return {
           title:sec.label, blurb:sec.blurb,
@@ -3489,7 +3515,7 @@ export default class PulseLogic extends DCLogic {
           buttonLabel: running ? "Pause" : "Start",
           buttonIcon: running ? "M9 5.5v13 M15 5.5v13" : "M7 4.5v15l13-7.5-13-7.5Z",
           toggle: () => this.setState(prev => ({timerRunning: !prev.timerRunning,
-            timerTask: prev.timerTask || "Chase INV-10428 — Dunne & Sons",
+            timerTask: prev.timerTask || "Chase INV-10428 — Western Utilities",
             timerPreset: prev.timerPreset || 25})),
           reset: () => this.setState({timerRunning:false, timerTask:null, timerPreset:null}),
           complete: () => this.setState({timerRunning:false, timerTask:null})
@@ -3709,7 +3735,7 @@ export default class PulseLogic extends DCLogic {
       miniEmpty: st.miniThread.length === 0,
       miniGreeting: (() => { const h = new Date().getHours();
         const g = h < 5 ? "Still up" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : h < 22 ? "Good evening" : "Still going";
-        return g + ", Mac"; })(),
+        return g + ", Ronan"; })(),
       miniSuggestions: [
         {label:"What changed today?", run:() => this.askMini("What changed today?")},
         {label:"What needs my decision?", run:() => this.askMini("What needs my decision?")},
@@ -3737,8 +3763,8 @@ export default class PulseLogic extends DCLogic {
           {num:"03", title:"Notifications", icon:"M12 4a5.5 5.5 0 0 0-5.5 5.5v3.2L5 16h14l-1.5-3.3V9.5A5.5 5.5 0 0 0 12 4Z M9.8 19a2.2 2.2 0 0 0 4.4 0",
             statusText:"12 unread", statusColor:"#6ad0f0", open:notifsOpen, toggle:toggle("notifications"),
             isEmpty:false, emptyText:"",
-            rows:[{isCheck:false, title:"Xero token expired — reconnect", hasTag:false},
-              {isCheck:false, title:"Aoife raised a €14,280 approval", hasTag:false},
+            rows:[{isCheck:false, title:"QuickBooks Online token expired — reconnect", hasTag:false},
+              {isCheck:false, title:"Niamh raised a €14,280 approval", hasTag:false},
               {isCheck:false, title:"3 accounts moved off Standard rate", hasTag:false}],
             hasLink:true, linkLabel:"All notifications", linkGo: () => this.setState({showNotifs:true, miniOpen:false}),
             wrapStyle: "background:var(--surface);border:1px solid var(--border);border-radius:var(--card-r,18px);overflow:hidden"}
@@ -4192,7 +4218,7 @@ export default class PulseLogic extends DCLogic {
         }
         return this._greetPick;
       })(),
-      greetingName: "Mac",
+      greetingName: "Ronan",
       flipUnits: this.buildFlipUnits(BODY, INK, LIME),
       enterSettings: (e) => this.hover("__settings", "Settings", "", e),
       leaveSettings: () => this.unhover("__settings"),
@@ -4203,7 +4229,7 @@ export default class PulseLogic extends DCLogic {
         style: labelStyle(st.hovered !== null, st.hoverTop)
       },
       isChat: page === "Home",
-      isWork: page === "Work",
+      isWork: page === "Work" && !modModel,
       isSettings: page === "Settings",
       admin: adminModel,
       inboxCount: String(openKeys.length),
@@ -4236,16 +4262,17 @@ export default class PulseLogic extends DCLogic {
         };
       }),
       suggestions: [
-        {label:"Which organisations are over their limit?", run:() => this.ask("Which organisations are over their credit limit?")},
-        {label:"What is overdue in my work?", run:() => this.ask("Summarise the tasks running late")},
-        {label:"What visits are booked this week?", run:() => this.ask("What site visits are booked this week?")}
+        {label:"What needs my attention?", run:() => this.ask("What needs my attention?")},
+        {label:"Why is PRJ-027 below target?", run:() => this.ask("Why is PRJ-027 below target?")},
+        {label:"Show missing timesheets", run:() => this.ask("Show missing timesheets")},
+        {label:"Can tomorrow's hires go ahead?", run:() => this.ask("Can tomorrow's hires go ahead?")}
       ],
       activity: [
-        {who:"Aoife Nolan", what:"raised purchase order PO-4471", event:"core.approval.created", when:"18m", dot:LIME},
-        {who:"Helios", what:"flagged Dunne & Sons payment behaviour", event:"core.notification.created", when:"2h", dot:AMBER},
-        {who:"Tom Walsh", what:"created a depot stock check visit", event:"site-visits.visit.created", when:"Yesterday", dot:NEUTRAL},
+        {who:"Niamh Kelly", what:"raised purchase order HF-220 PO", event:"core.approval.created", when:"18m", dot:LIME},
+        {who:"Helios", what:"flagged Western Utilities payment behaviour", event:"core.notification.created", when:"2h", dot:AMBER},
+        {who:"Patrick Moran", what:"created a depot stock check visit", event:"site-visits.visit.created", when:"Yesterday", dot:NEUTRAL},
         {who:"Overdue reminder", what:"sent 6 of 10 emails", event:"core.automation.failed", when:"08:00", dot:AMBER},
-        {who:"Dispatcher", what:"dead-lettered 2 Xero deliveries", event:"core.event.dead", when:"02:16", dot:RED}
+        {who:"Dispatcher", what:"dead-lettered 2 QuickBooks Online deliveries", event:"core.event.dead", when:"02:16", dot:RED}
       ],
       /* Cards, not rows: each one lands on its own spring, newest first, with
          the status colour carried into a soft glow behind its marker. */
@@ -4263,7 +4290,7 @@ export default class PulseLogic extends DCLogic {
       notifGroups: [["EARLIER TODAY", 0]],
       deployment: [
         {k:"Client", v:"kilbride", font:MONO},
-        {k:"App name", v:"Kilbride Group Operations", font:"inherit"},
+        {k:"App name", v:"Civil Engineering & Plant Operations", font:"inherit"},
         {k:"Accent", v:"oklch(0.86 0.19 118)", font:MONO},
         {k:"Terminology", v:"organisation → Merchant", font:"inherit"},
         {k:"Locale", v:"EUR · Europe/Dublin", font:"inherit"},
@@ -4346,10 +4373,10 @@ export default class PulseLogic extends DCLogic {
       composerPrompts: [
         {label:"Chase the three invoices past 60 days", tag:"CASH", icon:ICONS.insights,
           run: () => this.ask("Chase the three invoices past 60 days")},
-        {label:"Why did the Xero sync fail this morning?", tag:"HEALTH", icon:ICONS.health,
-          run: () => this.ask("Why did the Xero sync fail this morning?")},
-        {label:"Who should cover tomorrow's Ballincollig visit?", tag:"WORK", icon:ICONS.visits,
-          run: () => this.ask("Who should cover tomorrow's Ballincollig visit?")}
+        {label:"Why did the QuickBooks Online sync fail this morning?", tag:"HEALTH", icon:ICONS.health,
+          run: () => this.ask("Why did the QuickBooks Online sync fail this morning?")},
+        {label:"Who should cover tomorrow's Main yard visit?", tag:"WORK", icon:ICONS.visits,
+          run: () => this.ask("Who should cover tomorrow's Main yard visit?")}
       ].map((p, i) => Object.assign(p, {
         rowStyle: "display:flex;align-items:center;gap:13px;width:100%;padding:10px 14px;background:none;border:0;"
           + (i ? "border-top:1px solid var(--border);" : "")
