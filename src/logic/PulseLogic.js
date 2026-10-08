@@ -1160,7 +1160,19 @@ export default class PulseLogic extends DCLogic {
     this.setState({paletteOpen:true, showNotifs:false, query:"", palSel:0, palScope:"All"});
   }
 
+  /* Deep link: #/Finance/invoices/INV-1048 opens that page, section and record. */
+  applyHash(){
+    try {
+      const hm = decodeURIComponent(location.hash || "").match(/^#\/([^/]+)(?:\/([^/]*))?(?:\/([^/]*))?$/);
+      if (!hm) return;
+      const pg = hm[1], first = (TABS[pg] || [[""]])[0][0];
+      if (MODULE_PAGES.indexOf(pg) > -1 || pg === "Work" || pg === "Records") this.modNav(pg, hm[2] || (pg === "Work" ? "timesheets" : pg === "Records" ? "clients" : first), hm[3] || null);
+    } catch (e) {}
+  }
   componentDidMount(){
+    this.applyHash();
+    this._onHash = () => this.applyHash();
+    window.addEventListener("hashchange", this._onHash);
     requestAnimationFrame(() => this.syncRailThumb());
     setTimeout(() => this.syncRailThumb(), 700);
     setTimeout(() => { const nav = document.querySelector('nav[data-rail-nav]');
@@ -1218,7 +1230,7 @@ export default class PulseLogic extends DCLogic {
     };
     window.addEventListener("paste", this._paste);
   }
-  componentWillUnmount(){ window.removeEventListener("paste", this._paste); window.removeEventListener("resize", this._resize); window.removeEventListener("keydown", this._key); clearInterval(this._t); clearInterval(this._clockTimer); clearInterval(this._flapBoot); cancelAnimationFrame(this._raf); clearInterval(this._fallback); clearInterval(this._actTimer); clearInterval(this._kpiTimer); }
+  componentWillUnmount(){ window.removeEventListener("hashchange", this._onHash); window.removeEventListener("paste", this._paste); window.removeEventListener("resize", this._resize); window.removeEventListener("keydown", this._key); clearInterval(this._t); clearInterval(this._clockTimer); clearInterval(this._flapBoot); cancelAnimationFrame(this._raf); clearInterval(this._fallback); clearInterval(this._actTimer); clearInterval(this._kpiTimer); }
 
   ask(q){
     const a = pickAnswer(q);
@@ -1253,11 +1265,17 @@ export default class PulseLogic extends DCLogic {
 
   modAct(name, payload){ this.setState(p => { const fx = fxApply(p.fx, name, payload); saveFx(fx); return {fx}; }); }
   modUiSet(k, v){ this.setState(p => ({modUi:Object.assign({}, p.modUi, {[k]:v})})); }
-  modNav(page, sec, id){
+  modNav(page, sec, id, patch){
     this.setState(p => {
-      const patch = {page, open:null, modUi:Object.assign({}, p.modUi, id ? {["sel:" + page + "/" + sec]:id} : {})};
-      if (page === "Work") patch.workSection = sec; else if (page === "Records") patch.recSection = sec; else patch.modSec = Object.assign({}, p.modSec, {[page]:sec});
-      return patch; });
+      const curSec = p.page === "Work" ? p.workSection : p.page === "Records" ? p.recSection : ((p.modSec[p.page]) || ((TABS[p.page] || [[""]])[0][0]));
+      const same = p.page === page && curSec === sec;
+      const tabs = TABS[p.page];
+      const tabLabel = tabs ? (tabs.find(t => t[0] === curSec) || [])[1] : null;
+      const back = same ? p.modBack : (MODULE_PAGES.indexOf(p.page) > -1 ? {page:p.page, sec:curSec, label:p.page + (tabLabel ? " / " + tabLabel : "")} : null);
+      const ui = Object.assign({}, p.modUi, patch || {}, id ? {["sel:" + page + "/" + sec]:id} : {});
+      const next = {page, open:null, modBack:back, modUi:ui};
+      if (page === "Work") next.workSection = sec; else if (page === "Records") next.recSection = sec; else next.modSec = Object.assign({}, p.modSec, {[page]:sec});
+      return next; });
   }
   modDownload(name, text, type){
     const url = URL.createObjectURL(new Blob([text], {type:type || "text/plain"}));
@@ -1269,7 +1287,7 @@ export default class PulseLogic extends DCLogic {
     const order = NAV.filter(n => !n.divider).map(n => n.page).concat(["Settings"]);
     const from = order.indexOf(this.state.page), to = order.indexOf(page);
     if (from > -1 && to > -1 && from !== to) this.setState(p => ({navDir: to > from ? 1 : -1, navSeq:(p.navSeq || 0) + 1}));
-    this.setState({page, open:null, showNotifs:false, filterMenuOpen:false});
+    this.setState({page, open:null, showNotifs:false, filterMenuOpen:false, modBack:null});
     if (page === "Dashboard") this.startKpiCount();
   }
   toggleIn(key, value){
@@ -1446,8 +1464,8 @@ export default class PulseLogic extends DCLogic {
     const modSecId = page === "Work" ? st.workSection : page === "Records" ? st.recSection : ((st.modSec[page]) || ((TABS[page] || [[""]])[0][0]));
     const isMod = MODULE_PAGES.indexOf(page) > -1 || (page === "Work" && WORK_MODULE_SECS.indexOf(modSecId) > -1) || (page === "Records" && REC_MODULE_SECS.indexOf(modSecId) > -1);
     const modModel = isMod ? (() => {
-      const built = buildModule(page, modSecId, st.fx, st.modUi, {act:(n, pl) => this.modAct(n, pl), ui:(k, val) => this.modUiSet(k, val), nav:(pg, sc, id) => this.modNav(pg, sc, id), download:(n, t, ty) => this.modDownload(n, t, ty)});
-      return built ? Object.assign({page, reset:() => this.modReset(), nav:(pg, sc, id) => this.modNav(pg, sc, id)}, built) : null; })() : null;
+      const built = buildModule(page, modSecId, st.fx, st.modUi, {act:(n, pl) => this.modAct(n, pl), ui:(k, val) => this.modUiSet(k, val), nav:(pg, sc, id, pa) => this.modNav(pg, sc, id, pa), download:(n, t, ty) => this.modDownload(n, t, ty)});
+      return built ? Object.assign({page, back:st.modBack || null, reset:() => this.modReset(), nav:(pg, sc, id, pa) => this.modNav(pg, sc, id, pa)}, built) : null; })() : null;
     const workSec = WORK_SECTIONS.find(s => s.id === st.workSection) || WORK_SECTIONS[0];
     const workView = st.workViews[workSec.id] || workSec.views[0];
     const allWorkTasks = st.addedTasks.concat(WORK_TASKS);
@@ -3115,7 +3133,7 @@ export default class PulseLogic extends DCLogic {
     const ADMIN_ORDER = ["Automations","System health","Installed modules"];
     let contextNav, contextHint, searchHint;
     if (MODULE_PAGES.indexOf(page) > -1){
-      contextNav = TABS[page].map(t => seg(t[1], modSecId === t[0], () => this.setState(pr => ({modSec:Object.assign({}, pr.modSec, {[page]:t[0]})}))));
+      contextNav = TABS[page].map(t => seg(t[1], modSecId === t[0], () => this.setState(pr => ({modBack:null, modSec:Object.assign({}, pr.modSec, {[page]:t[0]})}))));
       contextHint = page.toUpperCase() + " · DEMO DATA";
       searchHint = "Search " + page.toLowerCase();
     } else if (page === "Settings"){
@@ -3980,7 +3998,7 @@ export default class PulseLogic extends DCLogic {
         ? "position:absolute;left:0;right:0;top:0;height:76px;z-index:3;pointer-events:none;background:var(--accent)"
         : "display:none",
       headerPillStyle: "display:flex;align-items:center;gap:4px;height:54px;padding:5px;box-sizing:border-box;max-width:100%;min-width:0;overflow:hidden;"
-        + ((contextNav.length <= 6 && (st.w - (st.railOpen ? 252 : 68) - 12) >= 780) ? "" : "width:fit-content;margin:0 auto;")
+        + ((contextNav.length <= 3 && (st.w - (st.railOpen ? 252 : 68) - 12) >= 780) ? "" : "width:fit-content;margin:0 auto;")
         + "background:var(--surface);border:1px solid var(--border);border-radius:999px;"
         + "backdrop-filter:blur(24px) saturate(1.4);-webkit-backdrop-filter:blur(24px) saturate(1.4);"
         + "box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 10px 30px rgba(0,0,0,.28)",
@@ -4041,7 +4059,7 @@ export default class PulseLogic extends DCLogic {
       tabsLoose: !((st.w - (st.railOpen ? 252 : 68)) < 1000 && contextNav.length >= 4),
       tabsTight: (st.w - (st.railOpen ? 252 : 68)) < 1000 && contextNav.length >= 4,
       tabActiveBg: ((st.w - (st.railOpen ? 252 : 68)) < 1000 && contextNav.length >= 4) ? "var(--surface-2)" : "none",
-      searchWrapFlex: (contextNav.length <= 6 && (st.w - (st.railOpen ? 252 : 68) - 12) >= 780) ? "1 1 auto" : "0 0 auto",
+      searchWrapFlex: (contextNav.length <= 3 && (st.w - (st.railOpen ? 252 : 68) - 12) >= 780) ? "1 1 auto" : "0 0 auto",
       barLabel: st.barOpen ? "Collapse the bar" : "Expand the bar",
       barChevronStyle: "transition:transform .3s var(--ease);transform:rotate(" + (st.barOpen ? "0deg" : "180deg") + ")",
       toggleBar: () => this.setState(prev => ({barOpen: !prev.barOpen})),
@@ -4064,7 +4082,7 @@ export default class PulseLogic extends DCLogic {
       searchStyle: "height:38px;justify-self:center;min-width:0;" + (mid ? "width:100%;padding:0 8px 0 15px;" : "width:44px;justify-content:center;padding:0;"),
       // The bar is one row: the fewer sub-nav segments a page has, the more of the
       // leftover width the search field takes.
-      searchExpanded: contextNav.length <= 6 && (st.w - (st.railOpen ? 252 : 68) - 12) >= 780,
+      searchExpanded: contextNav.length <= 3 && (st.w - (st.railOpen ? 252 : 68) - 12) >= 780,
       searchBarStyle: (() => {
         const segs = contextNav.length;
         // No min-width floor: when the sub-nav pill group is wide, the search
@@ -4073,7 +4091,7 @@ export default class PulseLogic extends DCLogic {
         const cap = segs <= 2 ? 520 : segs <= 4 ? 440 : 340;
         // A real floor so the label always fits — the sub-nav group is now
         // shrinkable, so this comes out of its slack, not out of an overflow.
-        const collapsed = !(segs <= 6 && (st.w - (st.railOpen ? 252 : 68) - 12) >= 780);
+        const collapsed = !(segs <= 3 && (st.w - (st.railOpen ? 252 : 68) - 12) >= 780);
         if (collapsed) return "flex:none;width:42px;height:42px;display:flex;align-items:center;justify-content:center;padding:0;margin:0 2px;"
           + "background:var(--track);border:1px solid transparent;border-radius:999px;cursor:pointer;color:var(--body);"
           + "transition:border-color .2s var(--ease),color .2s var(--ease)";

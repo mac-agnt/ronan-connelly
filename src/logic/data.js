@@ -38,11 +38,11 @@ const ICONS = {
 /* Ontology stays first and is never removed (PulseLogic enforces this too). */
 const REC_SECTIONS = [
   {id:"ontology", label:"Ontology", blurb:"How every record connects: entities, predicates and the paths between them."},
+  {id:"files", label:"Files", blurb:"Documents, contracts and certificates — indexed where Helios can read them."},
+  {id:"contacts", label:"Contacts", blurb:"Every person the business deals with, staff and external."},
   {id:"clients", label:"Clients", blurb:"Clients and their timelines, linked to contracts and opportunities."},
   {id:"suppliers", label:"Suppliers", blurb:"Suppliers linked to parts, orders and payables."},
-  {id:"people", label:"People", blurb:"The 112-person demo roster."},
-  {id:"files", label:"Files", blurb:"Documents, contracts and certificates — indexed where Helios can read them."},
-  {id:"contacts", label:"Contacts", blurb:"Every person the business deals with, staff and external."}
+  {id:"people", label:"People", blurb:"The 112-person demo roster."}
 ];
 
 const CONTACTS = [
@@ -50,12 +50,12 @@ const CONTACTS = [
   ["Aisling Walsh","Operations Manager","aisling@example.com","Civil Engineering & Plant","staff","#9fd6f0"],
   ["Eoin Burke","Contracts Manager","eoin@example.com","Civil Engineering & Plant","staff","#e6c78a"],
   ["Niamh Kelly","Accounts Administrator","niamh@example.com","Civil Engineering & Plant","staff","#c8b4f0"],
-  ["Patrick Moran","Plant Coordinator","patrick@example.com","Civil Engineering & Plant","staff","#a8e0c0"],
+  ["Patrick Moran","Plant Coordinator","patrick@example.com","Civil Engineering & Plant","staff","#9bb8e4"],
   ["Seán Duffy","Workshop Manager","sean@example.com","Civil Engineering & Plant","staff","#e2a08c"],
   ["Fiona McHale","Safety Coordinator","fiona@example.com","Civil Engineering & Plant","staff","#9fd6f0"],
   ["Liam Joyce","Site Supervisor","liam@example.com","Civil Engineering & Plant","staff","#e6c78a"],
   ["Western Utilities AP","Accounts payable","ap@example.com","Western Utilities Delivery (demo client)","on stop","#e2a08c"],
-  ["Connacht Infrastructure PM","Project manager","pm@example.com","Connacht Infrastructure (demo client)","customer","#a8e0c0"],
+  ["Connacht Infrastructure PM","Project manager","pm@example.com","Connacht Infrastructure (demo client)","customer","#9bb8e4"],
   ["Mayo Roads Programme Office","Programme office","roads@example.com","Mayo Roads Programme (demo client)","customer","#c8b4f0"],
   ["West Coast Industrial Sales","Account manager","sales@example.com","West Coast Industrial Supplies (demo supplier)","supplier","#c8b4f0"]
 ];
@@ -259,7 +259,7 @@ const THEMES = [
   {id:"slate", label:"Slate", group:"Dark", bg:"#100e0c", surface:"#211c17", ink:"#f4f0ea", accent:"#e8a14a"},
   {id:"plum", label:"Plum", group:"Dark", bg:"#100a10", surface:"#20151f", ink:"#f6eef4", accent:"#f077b0"},
   {id:"ember", label:"Ember", group:"Dark", bg:"#0b0b0b", surface:"#1c1714", ink:"#f7f3ef", accent:"#f4561a"},
-  {id:"harbour", label:"Harbour", group:"Dark", bg:"#0b0e10", surface:"#13171a", ink:"#f3f5f4", accent:"#5ee79a"},
+  {id:"harbour", label:"Harbour", group:"Dark", bg:"#0b0e10", surface:"#13171a", ink:"#f3f5f4", accent:"#638CCA"},
   {id:"cargo", label:"Cargo", group:"Dark", bg:"#0a0a0a", surface:"#1a1c1a", ink:"#f2f5f2", accent:"#4ade80"},
   {id:"ocean", label:"Ocean", group:"Dark", bg:"#080e12", surface:"#141f25", ink:"#eaf4f8", accent:"#4fd4d0"},
   {id:"graphite", label:"Graphite", group:"Dark", bg:"#111112", surface:"#212124", ink:"#f4f4f5", accent:"#f4f4f5"},
@@ -287,7 +287,7 @@ const ADMIN_ICONS = {
 };
 
 const ADMIN_CARDS = [
-  {id:"people", group:"ORGANISATION", title:"People & access", icon:"people", tint:"#6ad0f0",
+  {id:"people", group:"ORGANISATION", title:"People & access", icon:"people", tint:"#8fb0e0",
    blurb:"Invite, suspend and offboard the people who use Pulse.",
    tags:["48 people","6 teams","3 locations"], badge:"3 waiting", badgeKind:"warn",
    footer:"Last login checked 4 minutes ago", action:"Review 3 invites",
@@ -303,7 +303,7 @@ const ADMIN_CARDS = [
    listLabel:"WHAT YOU CONTROL HERE",
    rows:[["Create permission templates","4 in use"],["View, edit, export and delete access","per permission"],
      ["Restrict by team, location or record owner","3 scopes"],["Set approval limits","€10,000 threshold"],["Preview Pulse as another user",""]]},
-  {id:"structure", group:"ORGANISATION", title:"Company structure", icon:"structure", tint:"#f0c04b",
+  {id:"structure", group:"ORGANISATION", title:"Company structure", icon:"structure", tint:"#8fb0e0",
    blurb:"Who reports to whom, where they work and when.",
    tags:["3 demo locations","Europe/Dublin","EUR","Demo data"],
    listLabel:"WHAT YOU CONTROL HERE",
@@ -321,7 +321,7 @@ const ADMIN_CARDS = [
    rows:[["Create approved agent roles","7 approved"],["Control which data agents can read","by permission"],
      ["Control which actions agents can take","read · write · external"],["Set approval requirements","all write tools", true],
      ["Set spending and usage limits","€40/month cap"],["Manage agent memory and retention","90 days"]]},
-  {id:"wf", group:"CONTROL", title:"Workflow controls", icon:"flow", tint:"#9d8cf5",
+  {id:"wf", group:"CONTROL", title:"Workflow controls", icon:"flow", tint:"#8fb0e0",
    blurb:"The guardrails, not the builder — that lives under Work.",
    tags:["Managers only","2 approval rules","Retry twice"],
    footer:"Building workflows happens in Work", action:"Open Work",
@@ -329,7 +329,7 @@ const ADMIN_CARDS = [
    rows:[["Who can create workflows","Managers only"],["Maximum autonomy","proposes, never sends", true],
      ["Approval rules","2 configured"],["Failure handling","retry twice, then notify"],
      ["Usage limits","500 runs/day"],["Global pause","all workflows", true],["Default notification settings","inbox only"]]},
-  {id:"notif", group:"CONTROL", title:"Notifications", icon:"bell", tint:"#f0994b",
+  {id:"notif", group:"CONTROL", title:"Notifications", icon:"bell", tint:"#8fb0e0",
    blurb:"Which events reach people, on which channel, and when not to.",
    tags:["Inbox","WhatsApp","Quiet 19:00–07:00"],
    listLabel:"WHAT YOU CONTROL HERE",
@@ -337,14 +337,14 @@ const ADMIN_CARDS = [
      ["Mobile push","", false],["In-app","", true],["Escalation rules","after 4 hours unread"],
      ["Quiet hours","19:00–07:00"],["Daily and weekly summaries","07:00 daily"]]},
 
-  {id:"integrations", group:"SYSTEMS", title:"Integrations", icon:"plug", tint:"#6ad0f0",
+  {id:"integrations", group:"SYSTEMS", title:"Integrations", icon:"plug", tint:"#8fb0e0",
    blurb:"Email, accounting, CRM and messaging — and which way data flows.",
    tags:["6 connected","1 disconnected","2 read-only"], badge:"QuickBooks Online down", badgeKind:"bad",
    footer:"QuickBooks Online token expired 27 February", action:"Reconnect",
    listLabel:"CONNECTIONS",
    rows:[["Gmail","read and write"],["QuickBooks Online","disconnected"],["QuickBooks Online","read only"],["Flex","read and write"],
      ["WhatsApp Business","write only"],["Resend","write only"],["Composio","not connected"]]},
-  {id:"modules", group:"SYSTEMS", title:"Modules & configuration", icon:"modules", tint:"#f0c04b",
+  {id:"modules", group:"SYSTEMS", title:"Modules & configuration", icon:"modules", tint:"#8fb0e0",
    blurb:"Turn modules on, and make Pulse speak the business's own words.",
    tags:["3 installed","1 available","2 renamed terms"],
    heroLabel:"TERMINOLOGY", heroAction:"Edit terminology",
@@ -353,7 +353,7 @@ const ADMIN_CARDS = [
    rows:[["Enable or disable modules","3 installed"],["Rename business terminology","2 overridden"],
      ["Create custom fields","9 fields"],["Configure statuses","6 sets"],["Edit record types","7 types"],
      ["Set required information","per record type"],["Manage form layouts","4 layouts"]]},
-  {id:"health", group:"SYSTEMS", title:"Data health", icon:"health", tint:"#e2705c",
+  {id:"health", group:"SYSTEMS", title:"Data health", icon:"health", tint:"#8fb0e0",
    blurb:"What is wrong with the data, how bad it is, and the fix.",
    tags:["7 issue types","231 records affected"], badge:"74 duplicates", badgeKind:"bad",
    footer:"Last scanned 12 minutes ago", action:"Fix 3 automatically",
@@ -369,7 +369,7 @@ const ADMIN_CARDS = [
      ["Records needing review","12","low","Flagged by an agent as inconsistent","Review"]],
    rows:[]},
 
-  {id:"security", group:"GOVERNANCE", title:"Security", icon:"lock", tint:"#8fa6ff",
+  {id:"security", group:"GOVERNANCE", title:"Security", icon:"lock", tint:"#8fb0e0",
    blurb:"Sign-in, sessions, devices and the keys that reach the API.",
    tags:["SSO on","2FA enforced","3 API keys"], badge:"2 advisories", badgeKind:"warn",
    footer:"2 security recommendations open", action:"Review",
@@ -378,14 +378,14 @@ const ADMIN_CARDS = [
      ["Login policies","30-day session"],["Active sessions","51"],["Approved devices","44"],
      ["IP restrictions","off", false],["Security alerts","on", true],["API keys","3 active"],
      ["Data retention rules","7 years"]]},
-  {id:"audit", group:"GOVERNANCE", title:"Audit log", icon:"audit", tint:"#9d8cf5",
+  {id:"audit", group:"GOVERNANCE", title:"Audit log", icon:"audit", tint:"#8fb0e0",
    blurb:"A locked history of who changed what. Searchable, exportable, never editable.",
    tags:["Append-only","7-year retention"],
    footer:"Nobody can edit or delete entries", action:"Export",
    listLabel:"WHAT IS RECORDED",
    rows:[["Permission changes","41 this month"],["Employee access","118"],["Data exports","9"],
      ["Integration changes","6"],["Agent actions","2,140"],["Deleted records","3"],["Admin changes","27"]]},
-  {id:"datamgmt", group:"GOVERNANCE", title:"Data management", icon:"data", tint:"#5fe0a8",
+  {id:"datamgmt", group:"GOVERNANCE", title:"Data management", icon:"data", tint:"#8fb0e0",
    blurb:"Import, export, restore and — carefully — delete.",
    tags:["Backup 02:00","30-day restore"],
    footer:"Last backup completed 02:00 today", action:"Run backup",
@@ -401,7 +401,7 @@ const ADMIN_CARDS = [
    rows:[["Company logo","kilbride-mark.svg"],["Pulse accent colour","oklch(0.86 0.19 118)"],
      ["Email templates","3"],["Document templates","2"],["Agent appearance","12 faces · 6 shells"],
      ["Customer-facing portal branding","on", true]]},
-  {id:"appearance", group:"EXPERIENCE", title:"Appearance & themes", icon:"brand", tint:"#6ad0f0",
+  {id:"appearance", group:"EXPERIENCE", title:"Appearance & themes", icon:"brand", tint:"#8fb0e0",
    blurb:"Pick a light or dark theme for how Pulse looks to you.",
    tags:["8 themes","4 dark","4 light"],
    listLabel:"THEMES", rows:[]}
@@ -416,7 +416,7 @@ const ADMIN_GROUPS = [
 ];
 
 /* ---- activity feeds ---- */
-const SRC_TINT = {"QuickBooks Online":"#8fa6ff", Flex:"#f0994b", Spreadsheet:"#6ad0f0", Gmail:"#f07a9d", Pulse:"var(--accent)", Sage:"#6ad0f0", WhatsApp:"#5fe0a8",
+const SRC_TINT = {"QuickBooks Online":"#8fa6ff", Flex:"#f0994b", Spreadsheet:"#6ad0f0", Gmail:"#f07a9d", Pulse:"var(--accent)", Sage:"#6ad0f0", WhatsApp:"#8fb0e0",
   Agent:"var(--accent)"};
 const SRC_ABBR = {"QuickBooks Online":"QB", Flex:"FX", Spreadsheet:"XL", Gmail:"GM", Pulse:"PL", Sage:"SG", WhatsApp:"WA", HubSpot:"HS", Xero:"XR", Agent:"AI"};
 
@@ -686,7 +686,7 @@ const AGENT_DEFS = [
      {kind:"user", text:"give it to séamus"},
      {kind:"agent", text:"assigned. the module fired site-visits.visit.updated and the escalation automation stood down."}
    ]},
-  {id:"stock", name:"Stock Watch", shape:"control-cube", tint:"#16241f", state:"thinking", role:"Reorder points, supplier lead times and what Thursday's jobs actually need",
+  {id:"stock", name:"Stock Watch", shape:"control-cube", tint:"#16222f", state:"thinking", role:"Reorder points, supplier lead times and what Thursday's jobs actually need",
    when:"Mon", preview:"two lines below reorder point before thursday.",
    thread:[
      {kind:"stamp", text:"Monday 11:20"},
@@ -988,19 +988,19 @@ const FACE_SHAPES = [
    state. The eyes, rim and dots always carry the state colour. */
 const FACE_TINTS = [
   ["#191c1f","Graphite"],["#1b2430","Slate"],["#241b2e","Aubergine"],
-  ["#2a2118","Bronze"],["#16241f","Pine"],["#2b1b1e","Oxblood"]
+  ["#2a2118","Bronze"],["#16222f","Deep blue"],["#2b1b1e","Oxblood"]
 ];
 
 /* ---- ontology graph: generation, Dijkstra traversal, canvas render ---- */
 const CLUSTERS = [
-  ["Organisations", "#c8f04b", 0.00, 0.62, 46],
-  ["People",        "#6ad0f0", 0.90, 0.70, 52],
-  ["Files",         "#b06cf0", 1.75, 0.66, 58],
-  ["Tasks",         "#f0c04b", 2.55, 0.72, 44],
-  ["Invoices",      "#f0567f", 3.35, 0.60, 38],
-  ["Site visits",   "#5fe0a8", 4.15, 0.70, 40],
-  ["Locations",     "#f0803a", 4.95, 0.64, 30],
-  ["Approvals",     "#5f7cf0", 5.65, 0.72, 34]
+  ["Organisations", "#638CCA", 0.00, 0.62, 46],
+  ["People",        "#9bb8e4", 0.90, 0.70, 52],
+  ["Files",         "#3d5e93", 1.75, 0.66, 58],
+  ["Tasks",         "#c9d9f0", 2.55, 0.72, 44],
+  ["Invoices",      "#7d8fb0", 3.35, 0.60, 38],
+  ["Site visits",   "#8fb0e0", 4.15, 0.70, 40],
+  ["Locations",     "#5a6f94", 4.95, 0.64, 30],
+  ["Approvals",     "#aebfdc", 5.65, 0.72, 34]
 ];
 
 function mulberry(seed){

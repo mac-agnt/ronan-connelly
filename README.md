@@ -35,6 +35,17 @@ npm run build      # type-check + production build into dist/
   - `recordsBackdrop`: the colour of the Records wash (`""` uses the theme gradient)
 - **Customising for a client:** read `CLAUDE.md` first. It lists the layout rules every copy keeps.
 
+## ERP module pages
+
+Dashboard, Projects, Plant & Hire, Garage, Finance, Safety, Work (Timesheets, Approvals) and Records (Clients, Suppliers, People) are data-driven.
+
+- **Data:** `src/logic/fixtures.js` holds the seeded records, the monthly history (`HIST`), quotes, clients, suppliers, incidents and training. Everything on screen derives from it. State persists to `localStorage` under `ce-plant-demo-v2`; **Reset demo** clears it.
+- **Pages:** `src/logic/mod/*.js` build each page as plain block objects (KPI strips, charts, boards, tables, drawers). `src/logic/mod/kit.js` lists every block type and holds the shared helpers.
+- **Renderer:** `src/views/pages/Module.tsx` draws the blocks; `charts.tsx` has the SVG charts; `src/styles/erp.css` styles them.
+- **Click-through:** every KPI, chart bar, list row and table link carries a `go` of `[page, section, recordId, uiPatch]`. The record id opens that record's drawer; the patch presets filters (for example `{invFilter:"overdue"}`).
+- **Deep links:** `#/Finance/invoices/INV-1048` opens a page, section and record on load.
+- **Colour:** one brand blue. Charts use `--ch1` to `--ch5` (blue steps); only warn (amber) and bad (red) are used for status.
+
 ## Updating from Claude Design
 
 Export the new version, replace the file in `design/`, then run:

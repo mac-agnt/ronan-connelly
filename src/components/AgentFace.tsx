@@ -7,8 +7,8 @@ import "../styles/agent-face.css";
 const STATES: Record<string, { glow: string; core: string }> = {
   working:   {glow:"#6aa6f0", core:"#cfe4ff"},
   thinking:  {glow:"#e8b23a", core:"#ffe6ac"},
-  waiting:   {glow:"#9d7cf0", core:"#e0d4ff"},
-  complete:  {glow:"#4fd48a", core:"#c9f5dd"},
+  waiting:   {glow:"#a3b4d6", core:"#e4eaf6"},
+  complete:  {glow:"#b9cdea", core:"#eef3fb"},
   attention: {glow:"#e8705a", core:"#ffd2c8"},
   idle:      {glow:"#7c8087", core:"#d5d8dc"}
 };
